@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/nathakusuma/sea-salon-be/internal/pkg/entity"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"log"
@@ -21,7 +22,7 @@ func NewDatabase() *gorm.DB {
 }
 
 func migrateTables(db *gorm.DB) error {
-	if err := db.AutoMigrate(); err != nil {
+	if err := db.AutoMigrate(&entity.Review{}); err != nil {
 		return err
 	}
 
