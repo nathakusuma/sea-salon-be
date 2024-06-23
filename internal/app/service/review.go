@@ -34,7 +34,7 @@ func (s *reviewService) Create(req model.CreateReviewRequest) response.Response 
 
 	id, err := s.r.Create(&review)
 	if err != nil {
-		return response.New(500, "Fail to create review", err)
+		return response.New(500, "Fail to create review", nil)
 	}
 
 	return response.New(201, "Review created", model.CreateReviewResponse{ID: id.String()})
@@ -56,7 +56,7 @@ func (s *reviewService) FindByLazyLoad(req model.FindReviewsLazyLoadRequest) res
 
 	reviews, err := s.r.FindByLazyLoad(idPivot, req.Action, req.Limit)
 	if err != nil {
-		return response.New(500, "Fail to fetch reviews", err)
+		return response.New(500, "Fail to fetch reviews", nil)
 	}
 
 	reviewsRes := make([]model.FindReviewResponse, len(reviews))
