@@ -11,6 +11,9 @@ type Response struct {
 }
 
 func New(httpCode int, message string, payload any) Response {
+	if payload == nil {
+		payload = map[string]any{}
+	}
 	return Response{
 		HttpCode: httpCode,
 		Message:  message,
