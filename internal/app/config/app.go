@@ -20,16 +20,20 @@ func StartApp(config *StartAppConfig) {
 
 	// Repositories
 	reviewRepo := repository.NewReviewRepository(config.DB)
+	reservationRepo := repository.NewReservationRepository(config.DB)
 
 	// Services
 	reviewService := service.NewReviewService(reviewRepo)
+	reservationService := service.NewReservationService(reservationRepo)
 
 	// Handlers
 	reviewHandler := rest.NewReviewHandler(reviewService, val)
+	reservationHandler := rest.NewReservationHandler(reservationService, val)
 
 	routeConfig := route.Config{
-		App:           config.App,
-		ReviewHandler: reviewHandler,
+		App:                config.App,
+		ReviewHandler:      reviewHandler,
+		ReservationHandler: reservationHandler,
 	}
 	routeConfig.Setup()
 }

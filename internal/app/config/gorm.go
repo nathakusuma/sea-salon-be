@@ -22,7 +22,10 @@ func NewDatabase() *gorm.DB {
 }
 
 func migrateTables(db *gorm.DB) error {
-	if err := db.AutoMigrate(&entity.Review{}); err != nil {
+	if err := db.AutoMigrate(
+		&entity.Review{},
+		&entity.Reservation{},
+	); err != nil {
 		return err
 	}
 

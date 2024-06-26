@@ -7,8 +7,9 @@ import (
 )
 
 type Config struct {
-	App           *fiber.App
-	ReviewHandler rest.IReviewHandler
+	App                *fiber.App
+	ReviewHandler      rest.IReviewHandler
+	ReservationHandler rest.IReservationHandler
 }
 
 func (c *Config) Setup() {
@@ -16,10 +17,17 @@ func (c *Config) Setup() {
 	v1 := c.App.Group("/v1")
 
 	c.reviewRoutes(v1)
+	c.reservationRoutes(v1)
 }
 
 func (c *Config) reviewRoutes(r fiber.Router) {
 	reviews := r.Group("/reviews")
 	reviews.Post("", c.ReviewHandler.Create())
 	reviews.Get("", c.ReviewHandler.FindByLazyLoad())
+}
+
+func (c *Config) reservationRoutes(r fiber.Router) {
+	reservations := r.Group("/reservations")
+	reservations.Post("", c.ReservationHandler.Create())
+	reservations.Get("/available", c.ReservationHandler.FindAvailableSchedules())
 }
