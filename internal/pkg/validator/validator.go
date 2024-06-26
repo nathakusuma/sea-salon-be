@@ -23,7 +23,12 @@ func getJSONFieldName(structObj any, fieldName string) (string, error) {
 		return "", fmt.Errorf("field not found")
 	}
 
-	return field.Tag.Get("json"), nil
+	jsonFieldName := field.Tag.Get("json")
+	if jsonFieldName == "" {
+		jsonFieldName = field.Tag.Get("form")
+	}
+
+	return jsonFieldName, nil
 }
 
 func (v Validator) Validate(data any) []string {
