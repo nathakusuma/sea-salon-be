@@ -23,9 +23,9 @@ func NewDatabase() *gorm.DB {
 
 func migrateTables(db *gorm.DB) error {
 	if err := db.AutoMigrate(
+		&entity.User{},
 		&entity.Review{},
 		&entity.Reservation{},
-		&entity.User{},
 	); err != nil {
 		return err
 	}

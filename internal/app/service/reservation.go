@@ -3,6 +3,7 @@ package service
 import (
 	"github.com/nathakusuma/sea-salon-be/internal/app/repository"
 	"github.com/nathakusuma/sea-salon-be/internal/pkg/entity"
+	"github.com/nathakusuma/sea-salon-be/internal/pkg/jwt"
 	"github.com/nathakusuma/sea-salon-be/internal/pkg/model"
 	"github.com/nathakusuma/sea-salon-be/internal/pkg/response"
 	"github.com/oklog/ulid/v2"
@@ -11,7 +12,7 @@ import (
 )
 
 type IReservationService interface {
-	Create(req model.CreateReservationRequest) response.Response
+	Create(req model.CreateReservationRequest, userClaims jwt.Claims) response.Response
 	FindAvailableSchedules(req model.FindAvailableReservationSchedulesRequest) response.Response
 }
 
@@ -23,7 +24,12 @@ func NewReservationService(r repository.IReservationRepository) IReservationServ
 	return &reservationService{r: r}
 }
 
-func (s *reservationService) Create(req model.CreateReservationRequest) response.Response {
+func (s *reservationService) Create(req model.CreateReservationRequest, userClaims jwt.Claims) response.Response {
+	userID, err := ulid.Parse(userClaims.Subject)
+	if err != nil {
+		return response.New(400, "Fail to parse userID", err.Error())
+	}
+
 	startTime, err := time.Parse(time.Kitchen, req.StartTime)
 	if err != nil {
 		return response.New(400, "Fail to parse startTime", err.Error())
@@ -44,12 +50,11 @@ func (s *reservationService) Create(req model.CreateReservationRequest) response
 	}
 
 	reservation := entity.Reservation{
-		Model:        gorm.Model{},
-		ID:           ulid.Make(),
-		CustomerName: req.CustomerName,
-		PhoneNumber:  req.PhoneNumber,
-		ServiceName:  req.ServiceName,
-		StartTime:    startTime,
+		Model:       gorm.Model{},
+		ID:          ulid.Make(),
+		UserID:      userID,
+		ServiceName: req.ServiceName,
+		StartTime:   startTime,
 	}
 
 	id, err := s.r.Create(&reservation)

@@ -8,9 +8,8 @@ import (
 
 type Reservation struct {
 	gorm.Model
-	ID           ulid.ULID `gorm:"primaryKey; not null; unique"`
-	CustomerName string    `gorm:"type:varchar(50); not null"`
-	PhoneNumber  string    `gorm:"type:varchar(15); not null"`
-	ServiceName  string    `gorm:"type:varchar(50); not null"`
-	StartTime    time.Time `gorm:"type:timestamp; not null"`
+	ID          ulid.ULID `gorm:"primaryKey; not null; unique"`
+	UserID      ulid.ULID `gorm:"not null"`
+	ServiceName string    `gorm:"type:varchar(50); not null"`
+	StartTime   time.Time `gorm:"type:timestamp; not null"`
 }

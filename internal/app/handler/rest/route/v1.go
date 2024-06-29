@@ -32,7 +32,7 @@ func (c *Config) reviewRoutes(r fiber.Router) {
 
 func (c *Config) reservationRoutes(r fiber.Router) {
 	reservations := r.Group("/reservations")
-	//reservations.Use(c.AuthenticationMid.Authenticate())
+	reservations.Use(c.AuthenticationMid.Authenticate())
 	reservations.Post("", c.ReservationHandler.Create())
 	reservations.Get("/available", c.ReservationHandler.FindAvailableSchedules())
 }
