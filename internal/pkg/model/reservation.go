@@ -19,3 +19,11 @@ type FindAvailableReservationScheduleResponse struct {
 	StartTime  string `json:"startTime"`
 	FinishTime string `json:"finishTime"`
 }
+
+type FindReservationResponse struct {
+	ID          string `json:"id"`
+	Date        string `json:"date"`
+	ServiceName string `json:"serviceName"`
+	StartTime   string `json:"startTime"`
+	FinishTime  string `json:"finishTime"`
+}

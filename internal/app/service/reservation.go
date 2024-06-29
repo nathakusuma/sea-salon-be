@@ -14,6 +14,7 @@ import (
 type IReservationService interface {
 	Create(req model.CreateReservationRequest, userClaims jwt.Claims) response.Response
 	FindAvailableSchedules(req model.FindAvailableReservationSchedulesRequest) response.Response
+	FindByUser(userClaims jwt.Claims) response.Response
 }
 
 type reservationService struct {
@@ -138,4 +139,29 @@ func (s *reservationService) isTimeAvailable(timeToCheck time.Time, serviceName 
 	}
 
 	return false, nil
+}
+
+func (s *reservationService) FindByUser(userClaims jwt.Claims) response.Response {
+	userID, err := ulid.Parse(userClaims.Subject)
+	if err != nil {
+		return response.New(400, "Fail to parse userID", err.Error())
+	}
+
+	reservations, err := s.r.FindByUserID(userID)
+	if err != nil {
+		return response.New(500, "Fail to find reservations", err.Error())
+	}
+
+	res := make([]model.FindReservationResponse, len(reservations))
+	for i, reservation := range reservations {
+		res[i] = model.FindReservationResponse{
+			ID:          reservation.ID.String(),
+			Date:        reservation.StartTime.Format(time.DateOnly),
+			ServiceName: reservation.ServiceName,
+			StartTime:   reservation.StartTime.Format(time.Kitchen),
+			FinishTime:  reservation.StartTime.Add(time.Hour).Format(time.Kitchen),
+		}
+	}
+
+	return response.New(200, "Reservations fetched", res)
 }

@@ -35,6 +35,7 @@ func (c *Config) reservationRoutes(r fiber.Router) {
 	reservations.Use(c.AuthenticationMid.Authenticate())
 	reservations.Post("", c.ReservationHandler.Create())
 	reservations.Get("/available", c.ReservationHandler.FindAvailableSchedules())
+	reservations.Get("/my", c.ReservationHandler.FindByUser())
 }
 
 func (c *Config) authRoutes(r fiber.Router) {

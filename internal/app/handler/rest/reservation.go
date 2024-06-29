@@ -12,6 +12,7 @@ import (
 type IReservationHandler interface {
 	Create() fiber.Handler
 	FindAvailableSchedules() fiber.Handler
+	FindByUser() fiber.Handler
 }
 
 type reservationHandler struct {
@@ -51,6 +52,15 @@ func (h *reservationHandler) FindAvailableSchedules() fiber.Handler {
 		}
 
 		res := h.s.FindAvailableSchedules(req)
+		return res.Send(c)
+	}
+}
+
+func (h *reservationHandler) FindByUser() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		userClaims := c.Locals("claims").(jwt.Claims)
+
+		res := h.s.FindByUser(userClaims)
 		return res.Send(c)
 	}
 }
