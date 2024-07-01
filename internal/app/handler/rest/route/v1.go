@@ -13,6 +13,7 @@ type Config struct {
 	ReviewHandler      rest.IReviewHandler
 	ReservationHandler rest.IReservationHandler
 	AuthHandler        rest.IAuthHandler
+	ServiceHandler     rest.IServiceHandler
 }
 
 func (c *Config) Setup() {
@@ -22,6 +23,7 @@ func (c *Config) Setup() {
 	c.reviewRoutes(v1)
 	c.reservationRoutes(v1)
 	c.authRoutes(v1)
+	c.serviceRoutes(v1)
 }
 
 func (c *Config) reviewRoutes(r fiber.Router) {
@@ -42,4 +44,10 @@ func (c *Config) authRoutes(r fiber.Router) {
 	auth := r.Group("/auth")
 	auth.Post("/register", c.AuthHandler.Register())
 	auth.Post("/login", c.AuthHandler.Login())
+}
+
+func (c *Config) serviceRoutes(r fiber.Router) {
+	services := r.Group("/services")
+	services.Post("", c.ServiceHandler.Create())
+	services.Get("", c.ServiceHandler.FindAll())
 }

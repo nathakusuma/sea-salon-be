@@ -9,7 +9,7 @@ import (
 
 type IReservationRepository interface {
 	Create(reservation *entity.Reservation) (ulid.ULID, error)
-	FindByTimeRange(serviceName string, start time.Time, end time.Time) ([]entity.Reservation, error)
+	FindByTimeRange(serviceID ulid.ULID, start time.Time, end time.Time) ([]entity.Reservation, error)
 	FindByUserID(userID ulid.ULID) ([]entity.Reservation, error)
 }
 
@@ -29,10 +29,10 @@ func (r *reservationRepository) Create(reservation *entity.Reservation) (ulid.UL
 	return reservation.ID, nil
 }
 
-func (r *reservationRepository) FindByTimeRange(serviceName string, start time.Time, finish time.Time) ([]entity.Reservation, error) {
+func (r *reservationRepository) FindByTimeRange(serviceID ulid.ULID, start time.Time, finish time.Time) ([]entity.Reservation, error) {
 	var reservations []entity.Reservation
 
-	tx := r.db.Debug().Where("service_name = ? AND start_time BETWEEN ? AND ?", serviceName, start, finish)
+	tx := r.db.Debug().Where("service_id = ? AND start_time BETWEEN ? AND ?", serviceID, start, finish)
 
 	tx.Find(&reservations)
 
@@ -42,7 +42,7 @@ func (r *reservationRepository) FindByTimeRange(serviceName string, start time.T
 func (r *reservationRepository) FindByUserID(userID ulid.ULID) ([]entity.Reservation, error) {
 	var reservations []entity.Reservation
 
-	tx := r.db.Debug().Where("user_id = ?", userID).Order("start_time DESC")
+	tx := r.db.Debug().Preload("Service").Where("user_id = ?", userID).Order("start_time DESC")
 
 	tx.Find(&reservations)
 
