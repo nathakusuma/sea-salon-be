@@ -11,6 +11,7 @@ type IReservationRepository interface {
 	Create(reservation *entity.Reservation) (ulid.ULID, error)
 	FindByTimeRange(serviceID ulid.ULID, start time.Time, end time.Time) ([]entity.Reservation, error)
 	FindByUserID(userID ulid.ULID) ([]entity.Reservation, error)
+	FindByDate(date time.Time) ([]entity.Reservation, error)
 }
 
 type reservationRepository struct {
@@ -43,6 +44,16 @@ func (r *reservationRepository) FindByUserID(userID ulid.ULID) ([]entity.Reserva
 	var reservations []entity.Reservation
 
 	tx := r.db.Debug().Preload("Service").Where("user_id = ?", userID).Order("start_time DESC")
+
+	tx.Find(&reservations)
+
+	return reservations, tx.Error
+}
+
+func (r *reservationRepository) FindByDate(date time.Time) ([]entity.Reservation, error) {
+	var reservations []entity.Reservation
+
+	tx := r.db.Debug().Preload("Service").Preload("User").Where("DATE(start_time) = ?", date).Order("start_time")
 
 	tx.Find(&reservations)
 

@@ -17,6 +17,7 @@ type IReservationService interface {
 	Create(req model.CreateReservationRequest, userClaims jwt.Claims) response.Response
 	FindAvailableSchedules(req model.FindAvailableReservationSchedulesRequest) response.Response
 	FindByUser(userClaims jwt.Claims) response.Response
+	FindByDate(date string) response.Response
 }
 
 type reservationService struct {
@@ -194,6 +195,34 @@ func (s *reservationService) FindByUser(userClaims jwt.Claims) response.Response
 			ServiceName: reservation.Service.Name,
 			StartTime:   reservation.StartTime.Format(time.Kitchen),
 			FinishTime:  reservation.StartTime.Add(duration).Format(time.Kitchen),
+		}
+	}
+
+	return response.New(200, "Reservations fetched", res)
+}
+
+func (s *reservationService) FindByDate(dateStr string) response.Response {
+	date, err := time.Parse(time.DateOnly, dateStr)
+	if err != nil {
+		return response.New(400, "Fail to parse date", err.Error())
+	}
+
+	reservations, err := s.r.FindByDate(date)
+	if err != nil {
+		return response.New(500, "Fail to find reservations", err.Error())
+	}
+
+	res := make([]model.AdminFindReservationResponse, len(reservations))
+	for i, reservation := range reservations {
+		duration := time.Duration(reservation.Service.DurationMinute) * time.Minute
+		res[i] = model.AdminFindReservationResponse{
+			ID:           reservation.ID.String(),
+			CustomerName: reservation.User.FullName,
+			Email:        reservation.User.Email,
+			PhoneNumber:  reservation.User.PhoneNumber,
+			ServiceName:  reservation.Service.Name,
+			StartTime:    reservation.StartTime.Format(time.Kitchen),
+			FinishTime:   reservation.StartTime.Add(duration).Format(time.Kitchen),
 		}
 	}
 

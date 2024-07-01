@@ -38,6 +38,7 @@ func (c *Config) reservationRoutes(r fiber.Router) {
 	reservations.Post("", c.ReservationHandler.Create())
 	reservations.Get("/available", c.ReservationHandler.FindAvailableSchedules())
 	reservations.Get("/my", c.ReservationHandler.FindByUser())
+	reservations.Get("/admin", middleware.RequireAdmin(), c.ReservationHandler.FindByDate())
 }
 
 func (c *Config) authRoutes(r fiber.Router) {
