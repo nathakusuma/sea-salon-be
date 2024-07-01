@@ -74,5 +74,6 @@ func (s *authService) Login(req model.LoginRequest) response.Response {
 	return response.New(200, "Successfully logged in", model.LoginResponse{
 		Token:    token,
 		FullName: user.FullName,
+		IsAdmin:  user.IsAdmin,
 	})
 }
