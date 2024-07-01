@@ -28,7 +28,7 @@ func (c *Config) Setup() {
 
 func (c *Config) reviewRoutes(r fiber.Router) {
 	reviews := r.Group("/reviews")
-	reviews.Post("", c.ReviewHandler.Create())
+	reviews.Post("", c.AuthenticationMid.Authenticate(), c.ReviewHandler.Create())
 	reviews.Get("", c.ReviewHandler.FindByLazyLoad())
 }
 
@@ -49,6 +49,6 @@ func (c *Config) authRoutes(r fiber.Router) {
 
 func (c *Config) serviceRoutes(r fiber.Router) {
 	services := r.Group("/services")
-	services.Post("", c.ServiceHandler.Create())
+	services.Post("", c.AuthenticationMid.Authenticate(), middleware.RequireAdmin(), c.ServiceHandler.Create())
 	services.Get("", c.ServiceHandler.FindAll())
 }
