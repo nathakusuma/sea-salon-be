@@ -1,4 +1,5 @@
 Back-end repository: https://github.com/nathakusuma/sea-salon-be
+
 Front-end repository:   https://github.com/nathakusuma/sea-salon-fe
 
 # 💅 SEA SALON
@@ -10,15 +11,15 @@ https://seasalon.nathakusuma.com
 
 ## 🛠️ Tech Stack
 ### Front-end
-- **React.js**
-- **Bootstrap**
+- React.js
+- Bootstrap
 
 ### Back-end
-- **Golang**
-- **PostgreSQL**
-- **Fiber**
-- **GORM**
-- **Google Cloud Storage**
+- Golang
+- PostgreSQL
+- Fiber
+- GORM
+- Google Cloud Storage
 
 ## 🚀 How to run the code?
 ### Back-end
