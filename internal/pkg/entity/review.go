@@ -7,8 +7,9 @@ import (
 
 type Review struct {
 	gorm.Model
-	ID           ulid.ULID `gorm:"primaryKey; not null; unique"`
-	CustomerName string    `gorm:"type:varchar(50); not null"`
-	StarRating   int       `gorm:"type:smallint; not null"`
-	Comment      string    `gorm:"type:varchar(255); not null"`
+	ID         ulid.ULID `gorm:"primaryKey; not null; unique"`
+	UserID     ulid.ULID `gorm:"not null"`
+	User       User
+	StarRating int    `gorm:"type:smallint; not null"`
+	Comment    string `gorm:"type:varchar(255); not null"`
 }

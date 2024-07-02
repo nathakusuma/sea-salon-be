@@ -1,9 +1,8 @@
 package model
 
 type CreateReviewRequest struct {
-	CustomerName string `json:"customerName" validate:"required,max=50,min=1"`
-	StarRating   int    `json:"starRating" validate:"required,min=1,max=5"`
-	Comment      string `json:"comment" validate:"required,max=255,min=1"`
+	StarRating int    `json:"starRating" validate:"required,min=1,max=5"`
+	Comment    string `json:"comment" validate:"required,max=255,min=1"`
 }
 
 type CreateReviewResponse struct {

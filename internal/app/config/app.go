@@ -31,7 +31,7 @@ func StartApp(config *StartAppConfig) {
 	serviceRepo := repository.NewServiceRepository(config.DB)
 
 	// Services
-	reviewService := service.NewReviewService(reviewRepo)
+	reviewService := service.NewReviewService(reviewRepo, userRepo)
 	reservationService := service.NewReservationService(reservationRepo, serviceRepo)
 	authService := service.NewAuthService(userRepo, jwtAuth)
 	serviceService := service.NewServiceService(serviceRepo, &uploader)

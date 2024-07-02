@@ -3,6 +3,7 @@ package service
 import (
 	"github.com/nathakusuma/sea-salon-be/internal/app/repository"
 	"github.com/nathakusuma/sea-salon-be/internal/pkg/entity"
+	"github.com/nathakusuma/sea-salon-be/internal/pkg/jwt"
 	"github.com/nathakusuma/sea-salon-be/internal/pkg/model"
 	"github.com/nathakusuma/sea-salon-be/internal/pkg/response"
 	"github.com/oklog/ulid/v2"
@@ -11,25 +12,31 @@ import (
 )
 
 type IReviewService interface {
-	Create(req model.CreateReviewRequest) response.Response
+	Create(req model.CreateReviewRequest, claims *jwt.Claims) response.Response
 	FindByLazyLoad(req model.FindReviewsLazyLoadRequest) response.Response
 }
 
 type reviewService struct {
-	r repository.IReviewRepository
+	r  repository.IReviewRepository
+	ur repository.IUserRepository
 }
 
-func NewReviewService(r repository.IReviewRepository) IReviewService {
-	return &reviewService{r: r}
+func NewReviewService(r repository.IReviewRepository, ur repository.IUserRepository) IReviewService {
+	return &reviewService{r: r, ur: ur}
 }
 
-func (s *reviewService) Create(req model.CreateReviewRequest) response.Response {
+func (s *reviewService) Create(req model.CreateReviewRequest, claims *jwt.Claims) response.Response {
+	userID, err := ulid.Parse(claims.Subject)
+	if err != nil {
+		return response.New(400, "Fail to parse userID", err.Error())
+	}
+
 	review := entity.Review{
-		Model:        gorm.Model{},
-		ID:           ulid.Make(),
-		CustomerName: req.CustomerName,
-		StarRating:   req.StarRating,
-		Comment:      req.Comment,
+		Model:      gorm.Model{},
+		ID:         ulid.Make(),
+		UserID:     userID,
+		StarRating: req.StarRating,
+		Comment:    req.Comment,
 	}
 
 	id, err := s.r.Create(&review)
@@ -63,7 +70,7 @@ func (s *reviewService) FindByLazyLoad(req model.FindReviewsLazyLoadRequest) res
 	for i, review := range reviews {
 		reviewsRes[i] = model.FindReviewResponse{
 			ID:           review.ID.String(),
-			CustomerName: review.CustomerName,
+			CustomerName: review.User.FullName,
 			StarRating:   review.StarRating,
 			Comment:      review.Comment,
 			CreatedAt:    review.CreatedAt.Format(time.RFC3339),

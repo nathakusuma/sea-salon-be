@@ -3,6 +3,7 @@ package rest
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/nathakusuma/sea-salon-be/internal/app/service"
+	"github.com/nathakusuma/sea-salon-be/internal/pkg/jwt"
 	"github.com/nathakusuma/sea-salon-be/internal/pkg/model"
 	"github.com/nathakusuma/sea-salon-be/internal/pkg/response"
 	"github.com/nathakusuma/sea-salon-be/internal/pkg/validator"
@@ -32,7 +33,9 @@ func (h *reviewHandler) Create() fiber.Handler {
 			return response.New(400, "Fail to validate request body", err).Send(c)
 		}
 
-		res := h.s.Create(req)
+		claims := c.Locals("claims").(jwt.Claims)
+
+		res := h.s.Create(req, &claims)
 		return res.Send(c)
 	}
 }

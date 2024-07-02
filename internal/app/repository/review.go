@@ -30,7 +30,7 @@ func (r *reviewRepository) Create(review *entity.Review) (ulid.ULID, error) {
 func (r *reviewRepository) FindByLazyLoad(idPivot ulid.ULID, action string, limit int) ([]entity.Review, error) {
 	var reviews []entity.Review
 
-	tx := r.db.Debug().Limit(limit)
+	tx := r.db.Debug().Preload("User").Limit(limit)
 
 	switch {
 	case action == "top":
