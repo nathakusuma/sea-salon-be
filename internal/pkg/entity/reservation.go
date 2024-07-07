@@ -13,5 +13,7 @@ type Reservation struct {
 	User      User
 	ServiceID ulid.ULID `gorm:"not null"`
 	Service   Service
+	BranchID  ulid.ULID `gorm:"not null"`
+	Branch    Branch
 	StartTime time.Time `gorm:"type:timestamp; not null"`
 }

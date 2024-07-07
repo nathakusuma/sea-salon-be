@@ -29,12 +29,14 @@ func StartApp(config *StartAppConfig) {
 	reservationRepo := repository.NewReservationRepository(config.DB)
 	userRepo := repository.NewUserRepository(config.DB)
 	serviceRepo := repository.NewServiceRepository(config.DB)
+	branchRepo := repository.NewBranchRepository(config.DB)
 
 	// Services
 	reviewService := service.NewReviewService(reviewRepo, userRepo)
-	reservationService := service.NewReservationService(reservationRepo, serviceRepo)
+	reservationService := service.NewReservationService(reservationRepo, serviceRepo, branchRepo)
 	authService := service.NewAuthService(userRepo, jwtAuth)
 	serviceService := service.NewServiceService(serviceRepo, &uploader)
+	branchService := service.NewBranchService(branchRepo, &uploader)
 
 	// Middlewares
 	authenticationMid := middleware.NewAuthenticationMiddleware(jwtAuth)
@@ -44,6 +46,7 @@ func StartApp(config *StartAppConfig) {
 	reservationHandler := rest.NewReservationHandler(reservationService, val)
 	authHandler := rest.NewAuthHandler(authService, val)
 	serviceHandler := rest.NewServiceHandler(serviceService, val)
+	branchHandler := rest.NewBranchHandler(branchService, val)
 
 	routeConfig := route.Config{
 		App:                config.App,
@@ -52,6 +55,7 @@ func StartApp(config *StartAppConfig) {
 		AuthHandler:        authHandler,
 		AuthenticationMid:  authenticationMid,
 		ServiceHandler:     serviceHandler,
+		BranchHandler:      branchHandler,
 	}
 	routeConfig.Setup()
 }

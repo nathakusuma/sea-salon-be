@@ -13,7 +13,7 @@ type IReservationHandler interface {
 	Create() fiber.Handler
 	FindAvailableSchedules() fiber.Handler
 	FindByUser() fiber.Handler
-	FindByDate() fiber.Handler
+	FindByDateAndBranch() fiber.Handler
 }
 
 type reservationHandler struct {
@@ -66,7 +66,7 @@ func (h *reservationHandler) FindByUser() fiber.Handler {
 	}
 }
 
-func (h *reservationHandler) FindByDate() fiber.Handler {
+func (h *reservationHandler) FindByDateAndBranch() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		var req model.AdminFindReservationRequest
 		if err := c.QueryParser(&req); err != nil {
@@ -76,7 +76,7 @@ func (h *reservationHandler) FindByDate() fiber.Handler {
 			return response.New(400, "Fail to validate request query", err).Send(c)
 		}
 
-		res := h.s.FindByDate(req.Date)
+		res := h.s.FindByDateAndBranch(req)
 		return res.Send(c)
 	}
 }

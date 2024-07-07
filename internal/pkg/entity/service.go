@@ -12,4 +12,5 @@ type Service struct {
 	Description    string    `gorm:"type:varchar(255); not null"`
 	Price          int       `gorm:"type:int; not null"`
 	DurationMinute int       `gorm:"type:smallint; not null"`
+	Branches       []*Branch `gorm:"many2many:branch_services;"`
 }

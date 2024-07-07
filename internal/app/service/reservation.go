@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/nathakusuma/sea-salon-be/internal/app/repository"
 	"github.com/nathakusuma/sea-salon-be/internal/pkg/entity"
@@ -17,16 +18,17 @@ type IReservationService interface {
 	Create(req model.CreateReservationRequest, userClaims jwt.Claims) response.Response
 	FindAvailableSchedules(req model.FindAvailableReservationSchedulesRequest) response.Response
 	FindByUser(userClaims jwt.Claims) response.Response
-	FindByDate(date string) response.Response
+	FindByDateAndBranch(req model.AdminFindReservationRequest) response.Response
 }
 
 type reservationService struct {
 	r  repository.IReservationRepository
 	sr repository.IServiceRepository
+	br repository.IBranchRepository
 }
 
-func NewReservationService(r repository.IReservationRepository, sr repository.IServiceRepository) IReservationService {
-	return &reservationService{r: r, sr: sr}
+func NewReservationService(r repository.IReservationRepository, sr repository.IServiceRepository, br repository.IBranchRepository) IReservationService {
+	return &reservationService{r: r, sr: sr, br: br}
 }
 
 func (s *reservationService) Create(req model.CreateReservationRequest, userClaims jwt.Claims) response.Response {
@@ -45,24 +47,15 @@ func (s *reservationService) Create(req model.CreateReservationRequest, userClai
 	}
 	startTime = time.Date(date.Year(), date.Month(), date.Day(), startTime.Hour(), startTime.Minute(), 0, 0, time.UTC)
 
-	serviceID, err := ulid.Parse(req.ServiceID)
-	if err != nil {
-		return response.New(400, "Fail to parse serviceID", nil)
+	branch, service, errRes := s.validateBranchService(req.BranchID, req.ServiceID)
+	if errRes.HttpCode != 0 {
+		return errRes
 	}
 
-	service, err := s.sr.FindByID(serviceID)
-	if err != nil {
-		var pgErr *pgconn.PgError
-		ok := errors.As(err, &pgErr)
-		if ok && pgErr.Code == "42703" {
-			return response.New(404, "That service does not exist", nil)
-		}
-		return response.New(500, "Fail to find service", nil)
-	}
 	duration := time.Duration(service.DurationMinute) * time.Minute
 
 	// Check if the time is available
-	isAvailable, err := s.isTimeAvailable(startTime, serviceID, duration, date)
+	isAvailable, err := s.isTimeAvailable(startTime, branch, service.ID, duration, date)
 	if err != nil {
 		return response.New(500, "Fail to check time availability", err.Error())
 	}
@@ -74,7 +67,8 @@ func (s *reservationService) Create(req model.CreateReservationRequest, userClai
 		Model:     gorm.Model{},
 		ID:        ulid.Make(),
 		UserID:    userID,
-		ServiceID: serviceID,
+		BranchID:  branch.ID,
+		ServiceID: service.ID,
 		StartTime: startTime,
 	}
 
@@ -86,11 +80,11 @@ func (s *reservationService) Create(req model.CreateReservationRequest, userClai
 	return response.New(201, "Reservation created", model.CreateReservationResponse{ID: id.String()})
 }
 
-func (s *reservationService) findAvailableStartTimes(serviceID ulid.ULID, serviceDuration time.Duration, date time.Time) ([]time.Time, error) {
-	openTime := time.Date(date.Year(), date.Month(), date.Day(), 9, 0, 0, 0, time.UTC)
-	closeTime := time.Date(date.Year(), date.Month(), date.Day(), 21, 0, 0, 0, time.UTC)
+func (s *reservationService) findAvailableStartTimes(branch entity.Branch, serviceID ulid.ULID, serviceDuration time.Duration, date time.Time) ([]time.Time, error) {
+	openTime := time.Date(date.Year(), date.Month(), date.Day(), branch.OpenTime.Hour(), branch.OpenTime.Minute(), 0, 0, time.UTC)
+	closeTime := time.Date(date.Year(), date.Month(), date.Day(), branch.CloseTime.Hour(), branch.CloseTime.Minute(), 0, 0, time.UTC)
 
-	reservations, err := s.r.FindByTimeRange(serviceID, openTime, closeTime)
+	reservations, err := s.r.FindByTimeRange(branch.ID, serviceID, openTime, closeTime)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +98,7 @@ func (s *reservationService) findAvailableStartTimes(serviceID ulid.ULID, servic
 	}
 
 	// disable booking for time that already passed
-	branchTimeZone := time.FixedZone("WIB", 7*60*60)
+	branchTimeZone := time.FixedZone(branch.TimeZoneName, branch.TimeZoneOffset)
 	currTimeInBranchZone := time.Now().In(branchTimeZone)
 	currTimeFakeTz := time.Date(currTimeInBranchZone.Year(), currTimeInBranchZone.Month(), currTimeInBranchZone.Day(), currTimeInBranchZone.Hour(), currTimeInBranchZone.Minute(), currTimeInBranchZone.Second(), currTimeInBranchZone.Nanosecond(), time.UTC)
 	for current := openTime; current.Before(currTimeFakeTz); current = current.Add(serviceDuration) {
@@ -121,29 +115,55 @@ func (s *reservationService) findAvailableStartTimes(serviceID ulid.ULID, servic
 	return availableStartTimes, nil
 }
 
+func (s *reservationService) validateBranchService(branchIDStr string, serviceIDStr string) (entity.Branch, entity.Service, response.Response) {
+	branchID, err := ulid.Parse(branchIDStr)
+	if err != nil {
+		return entity.Branch{}, entity.Service{}, response.New(400, "Fail to parse branchID", nil)
+	}
+
+	branch, err := s.br.FindByID(branchID)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		ok := errors.As(err, &pgErr)
+		if ok && pgErr.Code == "42703" {
+			return entity.Branch{}, entity.Service{}, response.New(404, "That branch does not exist", nil)
+		}
+		return entity.Branch{}, entity.Service{}, response.New(500, "Fail to find branch", nil)
+	}
+
+	serviceID, err := ulid.Parse(serviceIDStr)
+	if err != nil {
+		return entity.Branch{}, entity.Service{}, response.New(400, "Fail to parse serviceID", nil)
+	}
+
+	var service *entity.Service
+	for _, s := range branch.Services {
+		if s.ID == serviceID {
+			service = s
+			break
+		}
+	}
+	if service == nil {
+		return entity.Branch{}, entity.Service{}, response.New(404, "That service does not exist in the branch", nil)
+	}
+
+	return branch, *service, response.Response{}
+}
+
 func (s *reservationService) FindAvailableSchedules(req model.FindAvailableReservationSchedulesRequest) response.Response {
 	date, err := time.Parse(time.DateOnly, req.Date)
 	if err != nil {
 		return response.New(400, "Fail to parse date", err.Error())
 	}
 
-	serviceID, err := ulid.Parse(req.ServiceID)
-	if err != nil {
-		return response.New(400, "Fail to parse serviceID", nil)
-	}
-	service, err := s.sr.FindByID(serviceID)
-	if err != nil {
-		var pgErr *pgconn.PgError
-		ok := errors.As(err, &pgErr)
-		if ok && pgErr.Code == "42703" {
-			return response.New(404, "That service does not exist", nil)
-		}
-		return response.New(500, "Fail to find service", nil)
+	branch, service, errRes := s.validateBranchService(req.BranchID, req.ServiceID)
+	if errRes.HttpCode != 0 {
+		return errRes
 	}
 
 	duration := time.Duration(service.DurationMinute) * time.Minute
 
-	startTimes, err := s.findAvailableStartTimes(serviceID, duration, date)
+	startTimes, err := s.findAvailableStartTimes(branch, service.ID, duration, date)
 	if err != nil {
 		return response.New(500, "Fail to find available schedules", err.Error())
 	}
@@ -159,8 +179,8 @@ func (s *reservationService) FindAvailableSchedules(req model.FindAvailableReser
 	return response.New(200, "Available schedules fetched", availableSchedules)
 }
 
-func (s *reservationService) isTimeAvailable(timeToCheck time.Time, serviceID ulid.ULID, serviceDuration time.Duration, date time.Time) (bool, error) {
-	availableTimes, err := s.findAvailableStartTimes(serviceID, serviceDuration, date)
+func (s *reservationService) isTimeAvailable(timeToCheck time.Time, branch entity.Branch, serviceID ulid.ULID, serviceDuration time.Duration, date time.Time) (bool, error) {
+	availableTimes, err := s.findAvailableStartTimes(branch, serviceID, serviceDuration, date)
 	if err != nil {
 		return false, err
 	}
@@ -192,24 +212,29 @@ func (s *reservationService) FindByUser(userClaims jwt.Claims) response.Response
 		res[i] = model.FindReservationResponse{
 			ID:          reservation.ID.String(),
 			Date:        reservation.StartTime.Format(time.DateOnly),
+			BranchName:  reservation.Branch.Name,
 			ServiceName: reservation.Service.Name,
-			StartTime:   reservation.StartTime.Format(time.Kitchen),
-			FinishTime:  reservation.StartTime.Add(duration).Format(time.Kitchen),
+			Time:        fmt.Sprintf("%s - %s %s", reservation.StartTime.Format(time.Kitchen), reservation.StartTime.Add(duration).Format(time.Kitchen), reservation.Branch.TimeZoneName),
 		}
 	}
 
 	return response.New(200, "Reservations fetched", res)
 }
 
-func (s *reservationService) FindByDate(dateStr string) response.Response {
-	date, err := time.Parse(time.DateOnly, dateStr)
+func (s *reservationService) FindByDateAndBranch(req model.AdminFindReservationRequest) response.Response {
+	date, err := time.Parse(time.DateOnly, req.Date)
 	if err != nil {
 		return response.New(400, "Fail to parse date", err.Error())
 	}
 
-	reservations, err := s.r.FindByDate(date)
+	branchID, err := ulid.Parse(req.BranchID)
 	if err != nil {
-		return response.New(500, "Fail to find reservations", err.Error())
+		return response.New(400, "Fail to parse branchID", err.Error())
+	}
+
+	reservations, err := s.r.FindByDateAndBranch(date, branchID)
+	if err != nil {
+		return response.New(500, "Fail to find reservations", nil)
 	}
 
 	res := make([]model.AdminFindReservationResponse, len(reservations))
@@ -220,9 +245,9 @@ func (s *reservationService) FindByDate(dateStr string) response.Response {
 			CustomerName: reservation.User.FullName,
 			Email:        reservation.User.Email,
 			PhoneNumber:  reservation.User.PhoneNumber,
+			BranchName:   reservation.Branch.Name,
 			ServiceName:  reservation.Service.Name,
-			StartTime:    reservation.StartTime.Format(time.Kitchen),
-			FinishTime:   reservation.StartTime.Add(duration).Format(time.Kitchen),
+			Time:         fmt.Sprintf("%s - %s %s", reservation.StartTime.Format(time.Kitchen), reservation.StartTime.Add(duration).Format(time.Kitchen), reservation.Branch.TimeZoneName),
 		}
 	}
 

@@ -1,6 +1,7 @@
 package model
 
 type CreateReservationRequest struct {
+	BranchID  string `json:"branchId" validate:"required,max=50,min=1"`
 	ServiceID string `json:"serviceId" validate:"required,max=50,min=1"`
 	StartTime string `json:"startTime" validate:"required"`
 	Date      string `json:"date" validate:"required"`
@@ -11,6 +12,7 @@ type CreateReservationResponse struct {
 }
 
 type FindAvailableReservationSchedulesRequest struct {
+	BranchID  string `form:"branchId" validate:"required,max=50,min=1"`
 	ServiceID string `form:"serviceId" validate:"required,max=50,min=1"`
 	Date      string `form:"date" validate:"required"`
 }
@@ -23,13 +25,14 @@ type FindAvailableReservationScheduleResponse struct {
 type FindReservationResponse struct {
 	ID          string `json:"id"`
 	Date        string `json:"date"`
+	BranchName  string `json:"branchName"`
 	ServiceName string `json:"serviceName"`
-	StartTime   string `json:"startTime"`
-	FinishTime  string `json:"finishTime"`
+	Time        string `json:"time"`
 }
 
 type AdminFindReservationRequest struct {
-	Date string `form:"date" validate:"required"`
+	Date     string `form:"date" validate:"required"`
+	BranchID string `form:"branchId" validate:"required,max=50,min=1"`
 }
 
 type AdminFindReservationResponse struct {
@@ -37,7 +40,7 @@ type AdminFindReservationResponse struct {
 	CustomerName string `json:"customerName"`
 	Email        string `json:"email"`
 	PhoneNumber  string `json:"phoneNumber"`
+	BranchName   string `json:"branchName"`
 	ServiceName  string `json:"serviceName"`
-	StartTime    string `json:"startTime"`
-	FinishTime   string `json:"finishTime"`
+	Time         string `json:"time"`
 }

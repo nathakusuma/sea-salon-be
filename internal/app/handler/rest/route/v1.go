@@ -14,6 +14,7 @@ type Config struct {
 	ReservationHandler rest.IReservationHandler
 	AuthHandler        rest.IAuthHandler
 	ServiceHandler     rest.IServiceHandler
+	BranchHandler      rest.IBranchHandler
 }
 
 func (c *Config) Setup() {
@@ -24,6 +25,7 @@ func (c *Config) Setup() {
 	c.reservationRoutes(v1)
 	c.authRoutes(v1)
 	c.serviceRoutes(v1)
+	c.branchRoutes(v1)
 }
 
 func (c *Config) reviewRoutes(r fiber.Router) {
@@ -38,7 +40,7 @@ func (c *Config) reservationRoutes(r fiber.Router) {
 	reservations.Post("", c.ReservationHandler.Create())
 	reservations.Get("/available", c.ReservationHandler.FindAvailableSchedules())
 	reservations.Get("/my", c.ReservationHandler.FindByUser())
-	reservations.Get("/admin", middleware.RequireAdmin(), c.ReservationHandler.FindByDate())
+	reservations.Get("/admin", middleware.RequireAdmin(), c.ReservationHandler.FindByDateAndBranch())
 }
 
 func (c *Config) authRoutes(r fiber.Router) {
@@ -51,4 +53,11 @@ func (c *Config) serviceRoutes(r fiber.Router) {
 	services := r.Group("/services")
 	services.Post("", c.AuthenticationMid.Authenticate(), middleware.RequireAdmin(), c.ServiceHandler.Create())
 	services.Get("", c.ServiceHandler.FindAll())
+}
+
+func (c *Config) branchRoutes(r fiber.Router) {
+	branches := r.Group("/branches")
+	branches.Post("", c.AuthenticationMid.Authenticate(), middleware.RequireAdmin(), c.BranchHandler.Create())
+	branches.Get("", c.BranchHandler.FindAll())
+	branches.Put("/services", c.AuthenticationMid.Authenticate(), middleware.RequireAdmin(), c.BranchHandler.SetServices())
 }
