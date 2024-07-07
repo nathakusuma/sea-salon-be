@@ -27,7 +27,11 @@ func (m AuthenticationMiddleware) Authenticate() fiber.Handler {
 			return response.New(401, "Empty token", nil).Send(c)
 		}
 
-		token := strings.Split(bearer, " ")[1]
+		tokenSlice := strings.Split(bearer, " ")
+		if len(tokenSlice) != 2 {
+			return response.New(401, "Invalid token", nil).Send(c)
+		}
+		token := tokenSlice[1]
 		var claims jwt.Claims
 		err := m.jwtAuth.Decode(token, &claims)
 		if err != nil {
