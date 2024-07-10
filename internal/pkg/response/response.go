@@ -2,6 +2,7 @@ package response
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"log"
 )
 
 type Response struct {
@@ -22,5 +23,9 @@ func New(httpCode int, message string, payload any) Response {
 }
 
 func (r Response) Send(c *fiber.Ctx) error {
+	if r.HttpCode >= 500 {
+		log.Printf("ERROR %v: %v payload=%v\n", r.HttpCode, r.Message, r.Payload)
+		r.Payload = map[string]any{}
+	}
 	return c.Status(r.HttpCode).JSON(r)
 }
